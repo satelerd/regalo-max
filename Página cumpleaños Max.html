@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Portal Metamodernista de Max</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            background-color: #000;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1;
+            width: 80%;
+            max-width: 800px;
+        }
+        .hidden {
+            display: none;
+        }
+        .btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-size: 1em;
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+        @keyframes glitch {
+            2%, 64% {
+                transform: translate(2px,0) skew(0deg);
+            }
+            4%, 60% {
+                transform: translate(-2px,0) skew(0deg);
+            }
+            62% {
+                transform: translate(0,0) skew(5deg); 
+            }
+        }
+        #message {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 2s;
+        }
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        #codeContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .codeBit {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .codeBit:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .codeBit.active {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        #final {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+        }
+
+        #regalo {
+            font-size: 1.2em;
+            padding: 20px;
+            background: linear-gradient(45deg, rgba(255, 0, 255, 0.7), rgba(0, 255, 255, 0.7), rgba(255, 255, 0, 0.7));
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 2s;
+            color: #000;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 600px) {
+            #regalo {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas"></div>
+    <div class="content">
+        <div id="inicio">
+            <h1 class="glitch">El Portal Metamodernista de Max</h1>
+            <p>Bienvenido al umbral de tu odisea cuántica, Max. En tu cumpleaños, te invitamos a un viaje a través del tejido de la realidad, donde el pasado, presente y futuro convergen en un instante eterno.</p>
+            <button class="btn" onclick="iniciarViaje()">Atraviesa el Portal</button>
+        </div>
+        <div id="fase1" class="hidden">
+            <h2>El Laberinto de las Posibilidades</h2>
+            <p style="background-color: rgba(0, 0, 0, 0.7); padding: 15px; border-radius: 10px;">Has entrado en el laberinto de las posibilidades infinitas. Cada elección que haces aquí resuena a través del multiverso. Encuentra el botón que te llevará al siguiente nivel de conciencia.</p>
+            <div id="botones" style="height: 400px; position: relative;"></div>
+        </div>
+        <div id="fase2" class="hidden">
+            <h2>El Código de la Existencia</h2>
+            <p>Has llegado al núcleo de la realidad, donde toda la información del universo se condensa en un único código. Activa los bits correctos para sintonizarte con el pulso del cosmos.</p>
+            <div id="codeContainer"></div>
+            <div id="hintContainer"></div>
+            <button class="btn" onclick="probarCombinacion()">Probar Combinación</button>
+        </div>
+        <div id="fase3" class="hidden">
+            <h2>La Sinfonía del Ahora</h2>
+            <p>En este momento eterno, todas las posibilidades coexisten. Sincroniza tu conciencia con el ritmo del universo y descubre la melodía de tu propio ser.</p>
+            <div id="ondas"></div>
+        </div>
+        <div id="final" class="hidden">
+            <h2>El Regalo de la Conciencia</h2>
+            <p>Feliz cumpleaños, Max. Has completado tu viaje a través del tejido de la realidad.</p>
+            <div id="regalo"></div>
+            <button class="btn" onclick="terminarViaje()">Continuar el Viaje</button>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, particles;
+        let currentPhase = 0;
+        const fases = ['inicio', 'fase1', 'fase2', 'fase3', 'final'];
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas').appendChild(renderer.domElement);
+
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+
+            for (let i = 0; i < 10000; i++) {
+                const x = Math.random() * 2000 - 1000;
+                const y = Math.random() * 2000 - 1000;
+                const z = Math.random() * 2000 - 1000;
+                vertices.push(x, y, z);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                color: 0xffffff,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            camera.position.z = 1000;
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.x += 0.001;
+            particles.rotation.y += 0.002;
+            renderer.render(scene, camera);
+        }
+
+        function iniciarViaje() {
+            siguienteFase(1);
+        }
+
+        function siguienteFase(fase) {
+            document.getElementById(fases[currentPhase]).classList.add('hidden');
+            document.getElementById(fases[fase]).classList.remove('hidden');
+            currentPhase = fase;
+
+            if (fase === 1) {
+                generarBotones();
+            } else if (fase === 2) {
+                generarCodigo();
+            } else if (fase === 3) {
+                generarOndas();
+            } else if (fase === 4) {
+                mostrarMensajeFinal();
+            }
+        }
+
+        function generarBotones() {
+            const contenedor = document.getElementById('botones');
+            contenedor.innerHTML = '';
+            const correctButton = Math.floor(Math.random() * 20);
+            for (let i = 0; i < 20; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.style.position = 'absolute';
+                btn.style.left = `${Math.random() * 80}%`;
+                btn.style.top = `${Math.random() * 80}%`;
+                btn.textContent = ['Quizás aquí', 'O tal vez allá', '¿Este es el camino?', 'Posibilidad cuántica', 'Salto dimensional'][Math.floor(Math.random() * 5)];
+                btn.onclick = () => {
+                    if (i === correctButton) {
+                        siguienteFase(2);
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                };
+                contenedor.appendChild(btn);
+            }
+        }
+
+        let correctCode, currentHint, hints;
+
+        function generarCodigo() {
+            const codeContainer = document.getElementById('codeContainer');
+            const hintContainer = document.getElementById('hintContainer');
+            codeContainer.innerHTML = '';
+            hintContainer.innerHTML = '';
+            
+            const codeLength = 6;
+            correctCode = Array(codeLength).fill(0).map(() => Math.random() < 0.5);
+            currentHint = 0;
+            hints = [
+                "La suma de los bits activos es " + correctCode.filter(bit => bit).length,
+                "El primer bit es " + (correctCode[0] ? "1" : "0"),
+                "El último bit es " + (correctCode[codeLength-1] ? "1" : "0"),
+                "Hay " + (correctCode.filter((bit, index) => index+1 % 2 === 0 && bit).length) + " unos en posiciones pares",
+                "Hay " + (correctCode.filter((bit, index) => index+1 % 2 !== 0 && bit).length) + " unos en posiciones impares",
+                "El código forma un patrón " + (correctCode.filter((bit, index) => bit === correctCode[0]).length > codeLength/2 ? "mayormente uniforme" : "mayormente alternante")
+            ];
+
+            for (let i = 0; i < codeLength; i++) {
+                const codeBit = document.createElement('div');
+                codeBit.className = 'codeBit';
+                codeBit.textContent = '0';
+                codeBit.onclick = () => {
+                    codeBit.classList.toggle('active');
+                    codeBit.textContent = codeBit.classList.contains('active') ? '1' : '0';
+                };
+                codeContainer.appendChild(codeBit);
+            }
+
+            hintContainer.innerHTML = "Pista: " + hints[currentHint];
+        }
+
+        function probarCombinacion() {
+            const currentCode = Array.from(document.querySelectorAll('.codeBit')).map(bit => bit.classList.contains('active'));
+            if (currentCode.every((bit, index) => bit === correctCode[index])) {
+                siguienteFase(3);
+            } else {
+                currentHint++;
+                if (currentHint < hints.length) {
+                    const hintContainer = document.getElementById('hintContainer');
+                    const newHint = document.createElement('p');
+                    newHint.textContent = "Pista " + (currentHint + 1) + ": " + hints[currentHint];
+                    hintContainer.appendChild(newHint);
+                } else {
+                    const hintContainer = document.getElementById('hintContainer');
+                    const noMoreHints = document.createElement('p');
+                    noMoreHints.textContent = "No hay más pistas disponibles. ¡Sigue intentando!";
+                    hintContainer.appendChild(noMoreHints);
+                }
+            }
+        }
+
+        function generarOndas() {
+            const contenedor = document.getElementById('ondas');
+            contenedor.innerHTML = '';
+            const conceptos = ['Sincronicidad', 'Resonancia', 'Armonía'];
+            
+            for (let i = 0; i < 3; i++) {
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '100';
+                slider.value = '0';
+                slider.className = 'slider';
+                
+                const label = document.createElement('label');
+                label.textContent = conceptos[i] + ': ';
+                label.appendChild(slider);
+                
+                contenedor.appendChild(label);
+            }
+            
+            const boton = document.createElement('button');
+            boton.className = 'btn';
+            boton.textContent = 'Sincronizar';
+            boton.onclick = verificarSincronizacion;
+            contenedor.appendChild(boton);
+        }
+
+        function verificarSincronizacion() {
+            const sliders = document.querySelectorAll('.slider');
+            if (Array.from(sliders).every(slider => slider.value === '100')) {
+                siguienteFase(4);
+            } else {
+                alert('Aún no has alcanzado la sincronización completa. Sigue ajustando las ondas.');
+            }
+        }
+
+        function mostrarMensajeFinal() {
+            const mensaje = document.getElementById('regalo');
+            mensaje.style.opacity = 1;
+            mensaje.innerHTML = `
+                <h3>Querido Max,</h3>
+                <p>En este momento de reflexión, te invito a respirar profundamente y contemplar el camino que estamos recorriendo juntos. Lo que estamos construyendo con SmartUp es algo que trasciende nuestras expectativas más salvajes de la infancia, y aun así, aquí estamos, haciéndolo realidad.</p>
+                <p>Este viaje metamodernista que emprendimos juntos es una odisea que desafía lo convencional, un sueño que quizás imaginamos en nuestra juventud más atrevida, pero que ahora estamos materializando con cada día que pasa.</p>
+                <p>Tu regalo hoy es esta pausa, este momento para maravillarte ante lo extraordinario de nuestro presente. Estamos viviendo tiempos que no debemos dar por sentado, creando un futuro que una vez parecía inalcanzable.</p>
+                <p>Ha sido un privilegio y una alegría compartir este trayecto contigo, no solo en SmartUp, sino en cada momento de nuestra amistad. Que este nuevo año de vida te traiga aún más momentos de asombro, crecimiento y la realización de que lo imposible es solo el comienzo de nuestras posibilidades.</p>
+                <h3>Feliz cumpleaños, amigo. Que tu conciencia siga expandiéndose y tu impacto en el mundo crezca con cada rotación solar.</h3>
+            `;
+        }
+
+        // Modificar el texto del botón final
+        document.querySelector('#final .btn').textContent = 'Finalizar el Viaje';
+
+        // Actualizar la función terminarViaje
+        function terminarViaje() {
+            alert('Gracias por compartir este viaje, Max. ¡Que tu año esté lleno de maravillas metamodernistas!');
+            location.reload();
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
